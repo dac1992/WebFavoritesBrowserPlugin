@@ -1,17 +1,16 @@
 import React, { useState } from 'react';
-import { SaveBookmark } from './components/SaveBookmark';
-import { BookmarkList } from './components/BookmarkList';
-import { TagManager } from './components/TagManager';
-import { SearchBar } from './components/SearchBar';
-import './popup.css';
+import { SaveBookmark } from './SaveBookmark';
+import { BookmarkList } from './BookmarkList';
+import { TagManager } from './TagManager';
+import { SearchBar } from './SearchBar';
 
-const Popup: React.FC = () => {
+const MainView: React.FC = () => {
   const [view, setView] = useState<'save' | 'list'>('save');
   const [showTagManager, setShowTagManager] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
   return (
-    <div className="popup-container">
+    <div className="main-view">
       <div className="header">
         <button onClick={() => setView('save')} className={view === 'save' ? 'active' : ''}>
           保存书签
@@ -42,4 +41,4 @@ const Popup: React.FC = () => {
   );
 };
 
-export default Popup; 
+export default MainView; 

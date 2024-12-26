@@ -1,140 +1,142 @@
-import React, { useState, useEffect, ChangeEvent } from 'react';
-import { BookmarkFormData } from '../../common/types';
-import { saveBookmark } from '../../common/chrome';
-import { generateId, normalizeTags } from '../../common/utils';
+import React, { useState, useEffect } from 'react';
+import { getCurrentTab, saveBookmark } from '../../common/chrome';
+import { generateId } from '../../common/utils';
+import { TagInput } from './TagInput';
 
 export const SaveBookmark: React.FC = () => {
-  const [formData, setFormData] = useState<BookmarkFormData>({
-    title: '',
-    url: '',
-    tags: [],
-    description: ''
-  });
+  const [title, setTitle] = useState('');
+  const [url, setUrl] = useState('');
+  const [description, setDescription] = useState('');
+  const [tags, setTags] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
-  // 获取当前标签页信息
   useEffect(() => {
-    const loadCurrentTab = async () => {
-      try {
-        const tab = await chrome.tabs.query({ active: true, currentWindow: true });
-        if (tab[0]) {
-          setFormData(prev => ({
-            ...prev,
-            title: tab[0].title || '',
-            url: tab[0].url || ''
-          }));
-        }
-      } catch (err) {
-        setError('获取页面信息失败');
-        console.error('Failed to get current tab:', err);
-      }
-    };
-
     loadCurrentTab();
   }, []);
 
-  const handleInputChange = (
-    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleTagsChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const tags = e.target.value.split(',').map(tag => tag.trim());
-    setFormData(prev => ({ ...prev, tags: normalizeTags(tags) }));
-  };
-
-  const handleSubmit = async () => {
+  const loadCurrentTab = async () => {
     try {
-      setLoading(true);
-      setError(null);
-      setSuccess(false);
+      const tab = await getCurrentTab();
+      setTitle(tab.title || '');
+      setUrl(tab.url || '');
+    } catch (err) {
+      console.error('Failed to load current tab:', err);
+      setError('获取当前标签页信息失败');
+    }
+  };
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!title.trim() || !url.trim()) return;
+
+    setLoading(true);
+    setError(null);
+    setSuccess(false);
+
+    try {
       await saveBookmark({
         id: generateId(),
-        ...formData,
+        title: title.trim(),
+        url: url.trim(),
+        description: description.trim(),
+        tags,
         createdAt: Date.now(),
         updatedAt: Date.now()
       });
 
       setSuccess(true);
-      // 重置表单
-      setFormData({
-        title: '',
-        url: '',
-        tags: [],
-        description: ''
-      });
+      setDescription('');
+      setTags([]);
+      
+      // 3秒后清除成功提示
+      setTimeout(() => {
+        setSuccess(false);
+      }, 3000);
     } catch (err) {
-      setError('保存失败');
       console.error('Failed to save bookmark:', err);
+      setError('保存书签失败');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="space-y-4">
+    <form className="save-bookmark" onSubmit={handleSubmit}>
       {error && (
-        <div className="p-2 text-red-500 bg-red-50 rounded">
+        <div className="error-message">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+          </svg>
           {error}
         </div>
       )}
 
       {success && (
-        <div className="p-2 text-green-500 bg-green-50 rounded">
+        <div className="success-message">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+          </svg>
           保存成功！
         </div>
       )}
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700">标题</label>
+      <div className="form-group">
+        <label htmlFor="title">标题</label>
         <input
           type="text"
-          name="title"
-          value={formData.title}
-          onChange={handleInputChange}
-          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+          id="title"
+          value={title}
+          onChange={e => setTitle(e.target.value)}
+          required
         />
       </div>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700">标签</label>
+      <div className="form-group">
+        <label htmlFor="url">网址</label>
         <input
-          type="text"
-          value={formData.tags.join(', ')}
-          onChange={handleTagsChange}
-          placeholder="用逗号分隔多个标签"
-          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+          type="url"
+          id="url"
+          value={url}
+          onChange={e => setUrl(e.target.value)}
+          required
         />
       </div>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700">描述</label>
+      <div className="form-group">
+        <label htmlFor="description">描述</label>
         <textarea
-          name="description"
-          value={formData.description}
-          onChange={handleInputChange}
-          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-          rows={3}
+          id="description"
+          value={description}
+          onChange={e => setDescription(e.target.value)}
+          placeholder="添加一些描述..."
         />
       </div>
 
-      <button
-        onClick={handleSubmit}
-        disabled={loading}
-        className={`w-full px-4 py-2 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-          loading
-            ? 'bg-blue-300 cursor-not-allowed'
-            : 'bg-blue-500 hover:bg-blue-600'
-        }`}
-      >
-        {loading ? '保存中...' : '保存书签'}
+      <TagInput
+        tags={tags}
+        onChange={setTags}
+      />
+
+      <button type="submit" disabled={loading || !title.trim() || !url.trim()}>
+        {loading ? (
+          <>
+            <svg className="animate-spin" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="10" strokeDasharray="32" strokeLinecap="round" />
+            </svg>
+            保存中...
+          </>
+        ) : (
+          <>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M3 5a2 2 0 012-2h10a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V5zm11 0H6v10h8V5z" clipRule="evenodd" />
+            </svg>
+            保存书签
+          </>
+        )}
       </button>
-    </div>
+    </form>
   );
 };
 

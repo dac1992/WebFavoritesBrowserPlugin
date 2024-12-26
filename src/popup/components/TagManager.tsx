@@ -1,192 +1,217 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Tag, TagManagerProps } from '../../common/types';
+import React, { useState, useEffect } from 'react';
+import { Tag } from '../../common/types';
+import { getTags, deleteTag, renameTag } from '../../common/chrome';
 import { generateId } from '../../common/utils';
 
-export const TagManager: React.FC<TagManagerProps> = React.memo(({ onClose }) => {
+interface TagManagerProps {
+  onClose: () => void;
+}
+
+export const TagManager: React.FC<TagManagerProps> = ({ onClose }) => {
   const [tags, setTags] = useState<Tag[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [newTagName, setNewTagName] = useState('');
-  const [editingTag, setEditingTag] = useState<Tag | null>(null);
+  const [editingTagId, setEditingTagId] = useState<string | null>(null);
+  const [editingTagName, setEditingTagName] = useState('');
+  const [sortBy, setSortBy] = useState<'name' | 'count' | 'date'>('name');
+  const [filterText, setFilterText] = useState('');
 
-  // 加载标签
   useEffect(() => {
-    const loadTags = async () => {
-      try {
-        setLoading(true);
-        const result = await chrome.storage.sync.get(['tags']);
-        setTags(result.tags || []);
-        setError(null);
-      } catch (err) {
-        setError('加载标签失败');
-        console.error('Failed to load tags:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     loadTags();
   }, []);
 
-  // 保存标签
-  const saveTags = useCallback(async (newTags: Tag[]) => {
+  const loadTags = async () => {
     try {
-      await chrome.storage.sync.set({ tags: newTags });
-      setTags(newTags);
+      setLoading(true);
+      const loadedTags = await getTags();
+      setTags(loadedTags);
+      setError(null);
+    } catch (err) {
+      setError('加载标签失败');
+      console.error('Failed to load tags:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEdit = (tag: Tag) => {
+    setEditingTagId(tag.id);
+    setEditingTagName(tag.name);
+  };
+
+  const handleSave = async () => {
+    if (!editingTagId || !editingTagName.trim()) return;
+
+    try {
+      await renameTag(editingTagId, editingTagName.trim());
+      setTags(tags.map(tag =>
+        tag.id === editingTagId
+          ? { ...tag, name: editingTagName.trim() }
+          : tag
+      ));
+      setEditingTagId(null);
+      setEditingTagName('');
       setError(null);
     } catch (err) {
       setError('保存标签失败');
-      console.error('Failed to save tags:', err);
+      console.error('Failed to save tag:', err);
     }
-  }, []);
+  };
 
-  // 添加标签
-  const handleAddTag = useCallback(async () => {
-    if (!newTagName.trim()) return;
+  const handleDelete = async (tagId: string) => {
+    if (!window.confirm('确定要删除这个标签吗？')) return;
+
+    try {
+      await deleteTag(tagId);
+      setTags(tags.filter(tag => tag.id !== tagId));
+      setError(null);
+    } catch (err) {
+      setError('删除标签失败');
+      console.error('Failed to delete tag:', err);
+    }
+  };
+
+  const handleCreate = async () => {
+    const name = window.prompt('请输入新标签名称');
+    if (!name?.trim()) return;
 
     const newTag: Tag = {
       id: generateId(),
-      name: newTagName.trim(),
+      name: name.trim(),
       count: 0,
       createdAt: Date.now()
     };
 
-    await saveTags([...tags, newTag]);
-    setNewTagName('');
-  }, [newTagName, tags, saveTags]);
+    try {
+      const updatedTags = [...tags, newTag];
+      await chrome.storage.sync.set({ tags: updatedTags });
+      setTags(updatedTags);
+      setError(null);
+    } catch (err) {
+      setError('创建标签失败');
+      console.error('Failed to create tag:', err);
+    }
+  };
 
-  // 更新标签
-  const handleUpdateTag = useCallback(async (tag: Tag) => {
-    if (!tag.name.trim()) return;
+  const sortTags = (tagsToSort: Tag[]) => {
+    return [...tagsToSort].sort((a, b) => {
+      switch (sortBy) {
+        case 'name':
+          return a.name.localeCompare(b.name);
+        case 'count':
+          return b.count - a.count;
+        case 'date':
+          return b.createdAt - a.createdAt;
+        default:
+          return 0;
+      }
+    });
+  };
 
-    const updatedTags = tags.map(t => 
-      t.id === tag.id ? { ...tag, name: tag.name.trim() } : t
-    );
-
-    await saveTags(updatedTags);
-    setEditingTag(null);
-  }, [tags, saveTags]);
-
-  // 删除标签
-  const handleDeleteTag = useCallback(async (tagId: string) => {
-    if (!window.confirm('确定要删除这个标签吗？')) return;
-
-    const updatedTags = tags.filter(tag => tag.id !== tagId);
-    await saveTags(updatedTags);
-  }, [tags, saveTags]);
-
-  // 使用useMemo缓存渲染的标签列表
-  const renderedTags = useMemo(() => (
-    tags.map(tag => (
-      <div
-        key={tag.id}
-        className="flex items-center justify-between p-2 hover:bg-gray-50 dark:hover:bg-gray-800"
-      >
-        {editingTag?.id === tag.id ? (
-          <input
-            type="text"
-            value={editingTag.name}
-            onChange={e => setEditingTag({ ...editingTag, name: e.target.value })}
-            className="flex-1 px-2 py-1 border rounded"
-            autoFocus
-          />
-        ) : (
-          <div className="flex items-center gap-2">
-            <span className="font-medium">{tag.name}</span>
-            <span className="text-sm text-gray-500">({tag.count}次使用)</span>
-          </div>
-        )}
-        <div className="flex gap-2">
-          {editingTag?.id === tag.id ? (
-            <>
-              <button
-                onClick={() => handleUpdateTag(editingTag)}
-                className="text-green-600 hover:text-green-700"
-              >
-                保存
-              </button>
-              <button
-                onClick={() => setEditingTag(null)}
-                className="text-gray-500 hover:text-gray-600"
-              >
-                取消
-              </button>
-            </>
-          ) : (
-            <>
-              <button
-                onClick={() => setEditingTag(tag)}
-                className="text-blue-600 hover:text-blue-700"
-              >
-                编辑
-              </button>
-              <button
-                onClick={() => handleDeleteTag(tag.id)}
-                className="text-red-600 hover:text-red-700"
-              >
-                删除
-              </button>
-            </>
-          )}
-        </div>
-      </div>
-    ))
-  ), [tags, editingTag, handleUpdateTag, handleDeleteTag]);
+  const filteredAndSortedTags = sortTags(
+    tags.filter(tag => 
+      tag.name.toLowerCase().includes(filterText.toLowerCase())
+    )
+  );
 
   if (loading) {
     return (
-      <div className="p-4 text-center">
-        <span>加载中...</span>
+      <div className="tag-manager">
+        <div className="empty-state">加载中...</div>
       </div>
     );
   }
 
   return (
-    <div className="p-4">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-lg font-medium">标签管理</h2>
-        <button
-          onClick={onClose}
-          className="text-gray-500 hover:text-gray-700"
-        >
-          ×
-        </button>
+    <div className="tag-manager">
+      <div className="tag-manager-header">
+        <h2>标签管理</h2>
+        <button onClick={onClose} className="close-button">×</button>
       </div>
 
       {error && (
-        <div className="mb-4 p-2 text-red-500 bg-red-50 rounded">
+        <div className="error-message">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+          </svg>
           {error}
         </div>
       )}
 
-      <div className="mb-4 flex gap-2">
+      <div className="controls">
         <input
           type="text"
-          value={newTagName}
-          onChange={e => setNewTagName(e.target.value)}
-          placeholder="输入新标签名称"
-          className="flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder="搜索标签..."
+          value={filterText}
+          onChange={e => setFilterText(e.target.value)}
+          className="search-input"
         />
-        <button
-          onClick={handleAddTag}
-          disabled={!newTagName.trim()}
-          className={`px-4 py-2 rounded-lg ${
-            newTagName.trim()
-              ? 'bg-blue-500 text-white hover:bg-blue-600'
-              : 'bg-gray-200 text-gray-500 cursor-not-allowed'
-          }`}
-        >
-          添加
-        </button>
+        <div className="sort-controls">
+          <span>排序：</span>
+          <select value={sortBy} onChange={e => setSortBy(e.target.value as 'name' | 'count' | 'date')}>
+            <option value="name">名称</option>
+            <option value="count">使用次数</option>
+            <option value="date">创建时间</option>
+          </select>
+        </div>
       </div>
 
-      <div className="space-y-2 max-h-[400px] overflow-y-auto">
-        {renderedTags}
+      <button onClick={handleCreate} className="create-button">
+        新建标签
+      </button>
+
+      <div className="tag-list">
+        {filteredAndSortedTags.map(tag => (
+          <div key={tag.id} className="tag-item">
+            {editingTagId === tag.id ? (
+              <input
+                type="text"
+                value={editingTagName}
+                onChange={e => setEditingTagName(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleSave()}
+                autoFocus
+              />
+            ) : (
+              <div className="flex-1">
+                <span className="tag-name">{tag.name}</span>
+                <span className="tag-count">
+                  {tag.count} 次使用
+                </span>
+              </div>
+            )}
+
+            <div className="actions">
+              {editingTagId === tag.id ? (
+                <>
+                  <button onClick={handleSave} className="edit">
+                    保存
+                  </button>
+                  <button onClick={() => setEditingTagId(null)} className="delete">
+                    取消
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button onClick={() => handleEdit(tag)} className="edit">
+                    编辑
+                  </button>
+                  <button onClick={() => handleDelete(tag.id)} className="delete">
+                    删除
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        ))}
+
+        {filteredAndSortedTags.length === 0 && (
+          <div className="empty-state">
+            <p>{filterText ? '没有找到匹配的标签' : '还没有创建任何标签'}</p>
+          </div>
+        )}
       </div>
     </div>
   );
-});
-
-TagManager.displayName = 'TagManager';
+};
 
 export default TagManager; 

@@ -66,13 +66,8 @@ export const getCurrentTab = async (): Promise<chrome.tabs.Tab> => {
 
 // 获取所有标签
 export const getTags = async (): Promise<Tag[]> => {
-  try {
-    const result = await chrome.storage.sync.get(['tags']);
-    return result.tags || [];
-  } catch (error) {
-    console.error('Failed to get tags:', error);
-    throw new Error('获取标签失败');
-  }
+  const result = await chrome.storage.sync.get('tags');
+  return result.tags || [];
 };
 
 // 更新标签使用次数
@@ -95,29 +90,9 @@ export const updateTagCount = async (tagNames: string[]): Promise<void> => {
 
 // 删除标签
 export const deleteTag = async (tagId: string): Promise<void> => {
-  try {
-    const result = await chrome.storage.sync.get(['tags', 'bookmarks']);
-    const tags: Tag[] = result.tags || [];
-    const bookmarks: Bookmark[] = result.bookmarks || [];
-
-    // 从标签列表中删除
-    const updatedTags = tags.filter(tag => tag.id !== tagId);
-
-    // 从所有书签中移除该标签
-    const tagName = tags.find(t => t.id === tagId)?.name;
-    const updatedBookmarks = bookmarks.map(bookmark => ({
-      ...bookmark,
-      tags: bookmark.tags.filter(t => t !== tagName)
-    }));
-
-    await chrome.storage.sync.set({
-      tags: updatedTags,
-      bookmarks: updatedBookmarks
-    });
-  } catch (error) {
-    console.error('Failed to delete tag:', error);
-    throw new Error('删除标签失败');
-  }
+  const tags = await getTags();
+  const filteredTags = tags.filter(tag => tag.id !== tagId);
+  await chrome.storage.sync.set({ tags: filteredTags });
 };
 
 // 重命名标签
@@ -148,5 +123,22 @@ export const renameTag = async (tagId: string, newName: string): Promise<void> =
   } catch (error) {
     console.error('Failed to rename tag:', error);
     throw new Error('重命名标签失败');
+  }
+};
+
+// 创建新标签
+export const createTag = async (tag: Tag): Promise<void> => {
+  const tags = await getTags();
+  tags.push(tag);
+  await chrome.storage.sync.set({ tags });
+};
+
+// 更新标签
+export const updateTag = async (updatedTag: Tag): Promise<void> => {
+  const tags = await getTags();
+  const index = tags.findIndex(tag => tag.id === updatedTag.id);
+  if (index !== -1) {
+    tags[index] = updatedTag;
+    await chrome.storage.sync.set({ tags });
   }
 }; 

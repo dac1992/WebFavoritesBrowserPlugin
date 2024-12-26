@@ -15,4 +15,463 @@ body {
 #root {
   width: 100%;
   height: 100%;
+}
+
+/* 基础样式 */
+.popup-container {
+  width: 400px;
+  min-height: 500px;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  padding: 0 16px;
+}
+
+/* 头部导航 */
+.header {
+  display: flex;
+  gap: 12px;
+  padding: 16px 0;
+  margin: 0 -16px;
+  padding-left: 16px;
+  padding-right: 16px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #fff;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.header button {
+  padding: 8px 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+  color: #374151;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex: 1;
+}
+
+.header button:hover {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+}
+
+.header button.active {
+  background: #3b82f6;
+  color: #fff;
+  border-color: #3b82f6;
+}
+
+/* 保存书签表单样式 */
+.save-bookmark {
+  padding: 20px 0;
+}
+
+.save-bookmark .form-group {
+  margin-bottom: 20px;
+  background: #f9fafb;
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.save-bookmark label {
+  display: block;
+  margin-bottom: 8px;
+  color: #374151;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.save-bookmark input,
+.save-bookmark textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  outline: none;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  background: #fff;
+}
+
+.save-bookmark input:focus,
+.save-bookmark textarea:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  background: #fff;
+}
+
+.save-bookmark textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.save-bookmark button {
+  width: 100%;
+  padding: 12px;
+  background: #3b82f6;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.save-bookmark button:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+}
+
+.save-bookmark button:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* 标签输入区域 */
+.tag-input {
+  margin-top: 16px;
+  background: #f9fafb;
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.tag-input .tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+  min-height: 32px;
+}
+
+.tag-input .tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  font-size: 14px;
+  color: #374151;
+  transition: all 0.2s ease;
+}
+
+.tag-input .tag:hover {
+  border-color: #d1d5db;
+  background: #f3f4f6;
+}
+
+.tag-input .tag button {
+  margin-left: 6px;
+  color: #6b7280;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+}
+
+.tag-input .tag button:hover {
+  color: #ef4444;
+}
+
+.tag-input input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  outline: none;
+  font-size: 14px;
+  background: #fff;
+}
+
+.tag-input input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* 模态框 */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  backdrop-filter: blur(4px);
+}
+
+.modal > div {
+  background: #fff;
+  border-radius: 12px;
+  width: 90%;
+  max-height: 90%;
+  overflow-y: auto;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* 标签管理器样式 */
+.tag-manager {
+  padding: 20px;
+  margin: 0 -16px;
+}
+
+.tag-manager-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.tag-manager-header h2 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.tag-manager-header .close-button {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 4px;
+  line-height: 1;
+}
+
+.tag-manager .create-button {
+  width: 100%;
+  padding: 12px;
+  background: #3b82f6;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-weight: 500;
+  margin-bottom: 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tag-manager .create-button:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+}
+
+.tag-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tag-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.tag-item:hover {
+  border-color: #d1d5db;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.tag-item .tag-name {
+  font-weight: 500;
+  color: #111827;
+}
+
+.tag-item .tag-count {
+  font-size: 13px;
+  color: #6b7280;
+  margin-left: 8px;
+}
+
+.tag-item .actions {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.tag-item .actions button {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tag-item .actions button.edit {
+  background: #dbeafe;
+  color: #2563eb;
+}
+
+.tag-item .actions button.edit:hover {
+  background: #bfdbfe;
+}
+
+.tag-item .actions button.delete {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.tag-item .actions button.delete:hover {
+  background: #fecaca;
+}
+
+.tag-item input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  margin-right: 12px;
+}
+
+.tag-item input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* 错误提示 */
+.error-message {
+  padding: 12px;
+  background: #fee2e2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  color: #dc2626;
+  margin-bottom: 16px;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 空状态 */
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: #6b7280;
+}
+
+.empty-state p {
+  margin: 0;
+  font-size: 14px;
+}
+
+/* 标签管理器控制区域 */
+.controls {
+  margin-bottom: 20px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.controls .search-input {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  outline: none;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.controls .search-input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.sort-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sort-controls span {
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.sort-controls select {
+  padding: 8px 24px 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #fff;
+  color: #374151;
+  font-size: 14px;
+  cursor: pointer;
+  outline: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236B7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 8px center;
+  background-repeat: no-repeat;
+  background-size: 20px 20px;
+}
+
+.sort-controls select:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* 搜索栏样式 */
+.search-bar {
+  padding: 12px 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+/* 书签列表样式 */
+.bookmark-list {
+  padding: 12px 0;
+}
+
+/* 成功提示 */
+.success-message {
+  padding: 12px;
+  background: #dcfce7;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  color: #15803d;
+  margin-bottom: 16px;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateY(-10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 } 
