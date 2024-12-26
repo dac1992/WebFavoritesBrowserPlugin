@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "Web Favorites",
+  "description": "更好的网页收藏管理工具",
+  "version": "1.0.0",
+  "icons": {
+    "128": "assets/icon.svg"
+  },
+  "action": {
+    "default_popup": "popup/index.html",
+    "default_icon": "assets/icon.svg"
+  },
+  "permissions": [
+    "storage",
+    "tabs",
+    "bookmarks"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"]
+    }
+  ]
+} 
